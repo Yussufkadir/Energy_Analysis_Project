@@ -1,2 +1,21 @@
+# secrets
+.env
 keys.py
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# editors
+.idea/
+.vscode/
+.DS_Store
+
+# data & generated output
 *.csv
+*.zip
+exports/*
+!exports/.gitkeep
+logs/

@@ -1,275 +1,109 @@
-# ⚡ Energy Analysis Project 
+# ⚡ US Grid Energy Pipeline
 
-A comprehensive analysis of U.S. electricity generation patterns across different energy sources using EIA (Energy Information Administration) data. This project explores temporal patterns, source contributions, and inter-relationships between energy sources through statistical analysis and dimensionality reduction techniques.
+An Airflow-orchestrated pipeline that loads hourly U.S. electricity data from the
+EIA API into a Postgres warehouse, models it with SQL into analysis-ready marts,
+and feeds a dashboard on generation mix, demand and forecast accuracy.
 
-## 📋 About
+![CI](https://github.com/Yussufkadir/Energy_Analysis_Project/actions/workflows/ci.yml/badge.svg)
 
-This project analyzes one year of electricity generation data from the U.S. Energy Information Administration, examining how different energy sources (coal, natural gas, nuclear, renewables, etc.) contribute to the power grid. Through multi-temporal analysis spanning hourly, daily, weekly, monthly, and yearly patterns, the project uncovers consumption trends and dependencies between energy sources using Principal Component Analysis (PCA) to reveal underlying relationships in the data.
+> **Dashboard:** _link coming soon (Tableau Public)_
 
-## ✨ Key Features
+## What it answers
 
-- **Multi-Temporal Analysis**: Examination of energy patterns across multiple time scales (hourly, daily, weekly, monthly, yearly)
-- **Source Comparison**: Detailed breakdown of electricity generation by energy source
-- **Pattern Recognition**: Identification of consumption trends and seasonal variations
-- **PCA Analysis**: Dimensionality reduction to discover relationships between different energy sources
-- **Data Visualization**: Clear, informative charts and graphs showing generation patterns
-- **Statistical Insights**: Quantitative analysis of energy source contributions and correlations
+1. **How clean is the grid, and when?** Renewable and clean (renewable + nuclear) share by region and month.
+2. **When does each source run?** Average generation by local hour of day and season. For example, how much solar covers the evening demand peak.
+3. **How good is EIA's day-ahead demand forecast?** Daily forecast error (MAPE) by region, and when it misses.
+4. **Which regions depend most on natural gas and coal?**
 
-## 🔍 Analysis Overview
+_Findings and screenshots are added here once the full 2024 backfill has run._
 
-### Energy Sources Analyzed
-- Coal
-- Natural Gas
-- Nuclear
-- Hydroelectric
-- Wind
-- Solar
-- Other Renewables
-- Petroleum and Other Fossil Fuels
+## Architecture
 
-### Temporal Scales
-1. **Hourly Analysis**: Peak and off-peak generation patterns
-2. **Daily Analysis**: Day-to-day variations and trends
-3. **Weekly Analysis**: Weekday vs. weekend patterns
-4. **Monthly Analysis**: Seasonal variations in generation
-5. **Yearly Analysis**: Overall contribution and long-term trends
-
-### Key Questions Answered
-- Which energy sources generate the most electricity?
-- How do generation patterns vary by time of day, week, and season?
-- What relationships exist between different energy sources?
-- How do renewable sources complement traditional sources?
-- What are the peak demand periods for each energy source?
-
-## 🛠️ Technology Stack
-
-- **Python 3.x**: Primary programming language
-- **Pandas**: Data manipulation and analysis
-- **NumPy**: Numerical computations
-- **Matplotlib**: Data visualization
-- **Seaborn**: Statistical visualizations
-- **Scikit-learn**: PCA implementation and analysis
-- **Jupyter Notebook**: Interactive analysis and documentation
-
-## 🏗️ Project Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Data Collection                          │
-│  ┌────────────────────────────────────────────────────┐    │
-│  │  EIA API / CSV Download                            │    │
-│  │  - One year of hourly generation data              │    │
-│  │  - Multiple energy sources                         │    │
-│  └────────────────────────────────────────────────────┘    │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│                Data Processing & Cleaning                   │
-│  ┌────────────────────────────────────────────────────┐    │
-│  │  - Handle missing values                           │    │
-│  │  - Data type conversions                           │    │
-│  │  - Timestamp parsing                               │    │
-│  │  - Outlier detection and handling                  │    │
-│  └────────────────────────────────────────────────────┘    │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│              Temporal Aggregation                           │
-│  ┌────────────────────────────────────────────────────┐    │
-│  │  Hourly   →  Group by hour of day                  │    │
-│  │  Daily    →  Aggregate to daily totals             │    │
-│  │  Weekly   →  Sum weekly generation                 │    │
-│  │  Monthly  →  Calculate monthly patterns            │    │
-│  │  Yearly   →  Annual total and averages             │    │
-│  └────────────────────────────────────────────────────┘    │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-        ┌──────────────┴──────────────┐
-        │                             │
-┌───────▼────────┐          ┌─────────▼──────────┐
-│   Statistical  │          │   PCA Analysis     │
-│    Analysis    │          │                    │
-│  ┌───────────┐ │          │  ┌──────────────┐ │
-│  │ Totals by │ │          │  │ Correlation  │ │
-│  │  source   │ │          │  │   matrix     │ │
-│  │           │ │          │  └──────────────┘ │
-│  │ % Share   │ │          │  ┌──────────────┐ │
-│  │           │ │          │  │ Dimensionality│ │
-│  │ Trends    │ │          │  │  reduction   │ │
-│  │           │ │          │  └──────────────┘ │
-│  │ Patterns  │ │          │  ┌──────────────┐ │
-│  └───────────┘ │          │  │ Component    │ │
-└────────────────┘          │  │  analysis    │ │
-                            │  └──────────────┘ │
-                            └────────────────────┘
-        │                             │
-        └──────────────┬──────────────┘
-                       │
-┌──────────────────────▼──────────────────────────────────────┐
-│                   Visualization                             │
-│  ┌────────────────────────────────────────────────────┐    │
-│  │  - Time series plots                               │    │
-│  │  - Stacked area charts                             │    │
-│  │  - Heatmaps                                        │    │
-│  │  - Box plots                                       │    │
-│  │  - PCA biplots and scree plots                    │    │
-│  │  - Correlation matrices                            │    │
-│  └────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    API[EIA v2 API<br/>hourly fuel mix + demand] -->|paged, retried,<br/>incremental| L[load_generation<br/>load_region]
+    subgraph Airflow DAG · daily
+        I[init_warehouse] --> L --> Q[quality_checks] --> M[build_models] --> E[export_csv]
+    end
+    L -->|COPY + upsert| RAW[(raw)]
+    RAW --> STG[(staging views)] --> MART[(mart tables)]
+    M -.-> STG
+    MART --> E --> CSV[CSV extracts] --> T[Tableau dashboard]
 ```
 
-## 🚀 Getting Started
+| Layer | Contents |
+|---|---|
+| `raw` | API rows as received, keyed on `(period, respondent, fueltype/type)` |
+| `ref` | Fuel groupings (fossil / nuclear / renewable / storage) and region time zones |
+| `staging` | Typed, enriched views; UTC converted to each region's local time; demand data pivoted from one row per metric to one row per hour |
+| `mart` | `daily_fuel_mix`, `hourly_profile`, `daily_demand`, `monthly_summary`, `data_completeness` |
+| `meta` | `load_log`: what every run fetched, accepted, de-duplicated and rejected |
 
-### Prerequisites
+## Engineering decisions
 
-- Python 3.8 or higher
-- pip or conda package manager
-- Jupyter Notebook or JupyterLab
+- **Incremental loads with a lookback.** Each daily run loads its own day plus the 3 days before it. EIA publishes late and revises recent hours, and the upsert picks up revised values. The original notebook re-downloaded the whole year in about 1.5 hours; a daily run fetches a few thousand rows.
+- **Idempotent.** Loads are `COPY` into a temp table, then `INSERT … ON CONFLICT DO UPDATE`. Re-running any window gives the same result. Tests check this.
+- **Stable pagination.** API pages are sorted on the full natural key, not just `period`. Otherwise rows with the same timestamp can shuffle between pages and get silently duplicated or dropped.
+- **Correct time semantics.** EIA-930 timestamps are UTC and *hour-ending* (per the form instructions), so `15:00` covers 14:00–15:00. Staging converts to hour-beginning local time per region. Otherwise every hour-of-day chart is off by one and the hour ending at midnight lands in the wrong day.
+- **No made-up values.** Missing hours stay `NULL`, and every mart reports `hours_reported` plus a completeness table. (An earlier version filled gaps with a global mean across all fuels, which put gas-plant values into solar series at night.)
+- **Data quality checks as SQL.** Each file in `sql/checks/` returns the rows that violate a rule. `error` checks fail the DAG (implausible US-48 demand, timestamps in the future, empty loads). `warn` checks only log (fuel sum vs reported net generation).
+- **Atomic model rebuilds.** Staging and marts rebuild in one transaction, so the dashboard never reads a half-built warehouse.
+- **Airflow only orchestrates.** Tasks call plain Python functions in `src/eia_pipeline`, and data moves through Postgres rather than XCom. The same pipeline runs from the CLI and in tests without Airflow.
 
-### Installation
+## Running it
 
-1. **Clone the repository**:
+Requirements: Docker and a free [EIA API key](https://www.eia.gov/opendata/).
+
 ```bash
-git clone https://github.com/Yussufkadir/Energy_Analysis_Project.git
-cd Energy_Analysis_Project
+cp .env.example .env        # add your EIA_API_KEY
+make up                     # Airflow UI → http://localhost:8080
+make backfill START=2024-01-01 END=2025-01-01   # one-off historical load
 ```
 
-2. **Create virtual environment** (optional but recommended):
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+Then unpause `eia_grid_pipeline` in the Airflow UI to keep the data up to date daily.
+
+| Command | |
+|---|---|
+| `make psql` | SQL shell on the warehouse (`localhost:5433`, user/pass `energy`) |
+| `make models` / `make export` | Rebuild marts / write `exports/*.csv` |
+| `make test` | Unit tests. Integration tests also run when `TEST_WAREHOUSE_DSN` points at a throwaway DB (`energy_test`). They wipe it. |
+| `make down` | Stop the stack (data is kept in Docker volumes) |
+
+Set `EIA_RESPONDENTS=US48,CAL,TEX,…` in `.env` to load only some regions for a faster, smaller backfill.
+
+## Project layout
+
+```
+dags/eia_grid_pipeline.py   Airflow DAG: schedule, retries, task order
+src/eia_pipeline/           extract · validate · warehouse · pipeline · CLI
+sql/schema/                 raw, meta and reference tables
+sql/models/                 staging views and mart tables
+sql/checks/                 data quality rules
+tests/                      unit tests + Postgres integration tests
+notebooks/                  original exploratory analysis (PCA, time patterns)
 ```
 
-3. **Install dependencies**:
-```bash
-pip install -r requirements.txt
-```
+## Exploratory analysis
 
-## 📊 Key Analyses & Findings
+The project started as a notebook analysis of 2024 hourly generation for a Big
+Data Analytics course. That work, in `notebooks/`, motivated the marts above:
 
-### 1. Generation by Source
-Analysis of total electricity generation and percentage contribution by each energy source over the year.
+- `01_initial_exploration.ipynb`: summary statistics, time features, PCA and clustering of fuel sources
+- `02_time_pattern_analysis.ipynb`: hourly, weekday, weekly and daily generation patterns, plus demand vs generation
 
-**Key Metrics:**
-- Total generation per source (MWh)
-- Percentage share of total generation
-- Average daily generation by source
+| Monthly load & mix | Weekday load & mix | PCA loadings |
+|---|---|---|
+| ![](docs/images/monthly_load_mix.png) | ![](docs/images/weekday_load_mix.png) | ![](docs/images/pca_heatmap.png) |
 
-### 2. Temporal Patterns
+## Tech stack
 
-**Hourly Patterns:**
-- Peak generation hours
-- Off-peak periods
-- Hour-of-day profiles for each source
+Python · Apache Airflow 3 · PostgreSQL · SQL · psycopg · Docker Compose · pytest · GitHub Actions · Tableau
 
-**Daily Patterns:**
-- Weekday vs. weekend differences
-- Day-to-day variability
-- Rolling averages and trends
+## Data source
 
-**Weekly Patterns:**
-- Weekly cycles in generation
-- Seasonal week-over-week changes
+[U.S. Energy Information Administration: Hourly Electric Grid Monitor](https://www.eia.gov/electricity/gridmonitor/)
+(`electricity/rto/fuel-type-data` and `electricity/rto/region-data`). Timestamps are UTC.
 
-**Monthly Patterns:**
-- Seasonal variations (summer vs. winter)
-- Monthly averages by source
-- Peak demand months
+## License
 
-**Yearly Overview:**
-- Annual totals and trends
-- Year-over-year comparisons (if multi-year data)
-
-### 3. PCA Analysis
-
-Principal Component Analysis reveals:
-- **Energy Source Relationships**: Which sources tend to increase/decrease together
-- **Variance Explained**: How much of the total variation is captured by main components
-- **Component Interpretation**: What each principal component represents (e.g., baseload vs. peaking sources)
-- **Correlation Patterns**: Strong and weak correlations between energy sources
-
-**Example Insights:**
-- Natural gas generation dominates the energy generation
-- Nuclear provides consistent baseload with minimal variation
-
-## 📈 Sample Visualizations
-
-The project includes various visualization types:
-
-- **Stacked Area Charts**: Showing generation mix over time
-- **Line Plots**: Individual source trends across time scales
-- **Heatmaps**: Hourly/daily patterns by source
-- **Box Plots**: Distribution of generation by source
-- **Correlation Matrix**: Relationships between energy sources
-- **PCA Biplots**: Principal components and variable loadings
-- **Scree Plots**: Variance explained by each component
-
-## 🎯 Learning Outcomes
-
-This project demonstrates proficiency in:
-
-- Data acquisition from government APIs (EIA)
-- Time series data manipulation with Pandas
-- Multi-scale temporal analysis
-- Exploratory Data Analysis (EDA)
-- Statistical visualization techniques
-- Dimensionality reduction (PCA)
-- Pattern recognition in energy data
-- Scientific computing with Python
-- Clear communication of analytical findings
-
-## 💡 Insights & Conclusions
-
-- Natural gas is the dominant source
-- Nuclear provides steady baseload power with minimal variation
-- Summer months show increased generation due to cooling demand
-- Renewable energy sources have very low share in energy generation
-
-## 🔄 Future Enhancements
-
-- [ ] Multi-year analysis to identify long-term trends
-- [ ] Weather data integration to correlate with renewable generation
-- [ ] Price analysis (cost per MWh by source)
-- [ ] Carbon emissions calculations by source
-- [ ] Interactive dashboards with Plotly/Dash
-- [ ] Machine learning models for generation forecasting
-- [ ] Geographic analysis by region/state
-- [ ] Economic analysis of energy source competitiveness
-
-## 🤝 Contributing
-
-Contributions, suggestions, and improvements are welcome! Feel free to:
-- Open issues for bugs or suggestions
-- Submit pull requests with enhancements
-- Share your own analysis ideas
-
-## 📝 License
-
-This project is part of a Big Data Analytics course and follows academic guidelines for educational projects.
-
-## 👨‍💻 Author
-
-**Yussuf Kadir**
-- GitHub: [@Yussufkadir](https://github.com/Yussufkadir)
-
-## 🙏 Acknowledgments
-
-- **U.S. Energy Information Administration (EIA)** for providing open access to energy data
-- Course instructors and peers for guidance and feedback
-- Python data science community for excellent libraries and documentation
-
-## 📚 Resources & References
-
-- [EIA Open Data](https://www.eia.gov/opendata/)
-- [EIA Electricity Data Browser](https://www.eia.gov/electricity/data/browser/)
-- [Pandas Documentation](https://pandas.pydata.org/docs/)
-- [Scikit-learn PCA Guide](https://scikit-learn.org/stable/modules/decomposition.html#pca)
-- [Python Data Science Handbook](https://jakevdp.github.io/PythonDataScienceHandbook/)
-
-## 📞 Dataset Information
-
-**Data Source**: U.S. Energy Information Administration (EIA)  
-**Dataset**: Hourly Electric Grid Monitor  
-**Time Period**: One year of hourly data  
-**Variables**: Electricity generation by energy source (MWh)  
-**Frequency**: Hourly recordings aggregated to multiple time scales  
+MIT, see [LICENCE.txt](LICENCE.txt).

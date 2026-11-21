@@ -1,0 +1,3 @@
+# Pipeline runtime (installed into the Airflow image)
+requests>=2.31
+psycopg[binary]>=3.2
