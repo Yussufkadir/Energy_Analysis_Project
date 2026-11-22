@@ -1,0 +1,68 @@
+# Local development stack (not for servers: no UI login, fixed passwords).
+# Airflow (single container, LocalExecutor) + two Postgres
+# databases, one for Airflow's own metadata and one as the data warehouse.
+#
+#   make up        -> Airflow UI at http://localhost:8080
+#   warehouse      -> postgresql://energy:energy@localhost:5433/energy
+
+services:
+  warehouse:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: energy
+      POSTGRES_PASSWORD: energy
+      POSTGRES_DB: energy
+    ports:
+      - "127.0.0.1:5433:5432"   # localhost only
+    volumes:
+      - warehouse-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U energy -d energy"]
+      interval: 5s
+      retries: 10
+
+  airflow-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      retries: 10
+
+  airflow:
+    build: .
+    command: standalone
+    ports:
+      - "127.0.0.1:8080:8080"   # localhost only: the UI has no login
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      # Local development only: skip the login screen.
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "true"
+      PYTHONPATH: /opt/airflow/src
+      WAREHOUSE_DSN: postgresql://energy:energy@warehouse:5432/energy
+      SQL_DIR: /opt/airflow/sql
+      EXPORT_DIR: /opt/airflow/exports
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./src:/opt/airflow/src
+      - ./sql:/opt/airflow/sql
+      - ./exports:/opt/airflow/exports
+    depends_on:
+      warehouse:
+        condition: service_healthy
+      airflow-db:
+        condition: service_healthy
+
+volumes:
+  warehouse-data:
+  airflow-db-data:

@@ -1,0 +1,10 @@
+-r requirements.txt
+pytest>=8
+
+# Exploration notebooks
+jupyter
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn

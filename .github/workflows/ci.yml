@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: energy
+          POSTGRES_PASSWORD: energy
+          POSTGRES_DB: energy
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U energy -d energy"
+          --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pytest
+      - name: Unit + integration tests
+        env:
+          TEST_WAREHOUSE_DSN: postgresql://energy:energy@localhost:5432/energy
+        run: python -m pytest -q
