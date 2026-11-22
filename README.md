@@ -31,7 +31,7 @@ and feeds a dashboard on generation mix, demand and forecast accuracy.
 ```mermaid
 flowchart LR
     API[EIA v2 API<br/>hourly fuel mix + demand] -->|paged, retried,<br/>incremental| L[load_generation<br/>load_region]
-    subgraph Airflow DAG · daily
+    subgraph dag["Airflow DAG (daily)"]
         I[init_warehouse] --> L --> Q[quality_checks] --> M[build_models] --> E[export_csv]
     end
     L -->|COPY + upsert| RAW[(raw)]
