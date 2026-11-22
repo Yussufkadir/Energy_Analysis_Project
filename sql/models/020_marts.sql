@@ -5,23 +5,35 @@
 create schema mart;
 
 -- Daily generation by fuel, with each fuel's share of that day's total.
+-- region_fossil_share_pct is the respondent's fossil share over the whole
+-- loaded period (storage excluded), repeated on every row so dashboards can
+-- sort regions by it without a calculated field.
 create table mart.daily_fuel_mix as
+with daily as (
+    select
+        period_local::date                          as date,
+        respondent,
+        respondent_name,
+        respondent_level,
+        fuel_code,
+        fuel_name,
+        fuel_group,
+        is_renewable,
+        sum(generation_mwh)                         as generation_mwh,
+        count(generation_mwh)                       as hours_reported,
+        round((100 * sum(generation_mwh)
+            / nullif(sum(sum(generation_mwh)) over (partition by period_local::date, respondent), 0)
+        )::numeric, 2)                              as share_pct
+    from staging.stg_generation
+    group by 1, 2, 3, 4, 5, 6, 7, 8
+)
 select
-    period_local::date                          as date,
-    respondent,
-    respondent_name,
-    respondent_level,
-    fuel_code,
-    fuel_name,
-    fuel_group,
-    is_renewable,
-    sum(generation_mwh)                         as generation_mwh,
-    count(generation_mwh)                       as hours_reported,
-    round((100 * sum(generation_mwh)
-        / nullif(sum(sum(generation_mwh)) over (partition by period_local::date, respondent), 0)
-    )::numeric, 2)                              as share_pct
-from staging.stg_generation
-group by 1, 2, 3, 4, 5, 6, 7, 8;
+    daily.*,
+    round((100
+        * sum(generation_mwh) filter (where fuel_group = 'fossil') over (partition by respondent)
+        / nullif(sum(generation_mwh) filter (where fuel_group <> 'storage') over (partition by respondent), 0)
+    )::numeric, 2)                                  as region_fossil_share_pct
+from daily;
 
 -- Average generation by local hour of day and month, for "when does each
 -- source run?" questions. Regions only: balancing authorities have no
